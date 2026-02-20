@@ -348,7 +348,41 @@ if ($method === "POST") {
         }
     }
 
-    jsonResponse(["status" => "error", "message" => "Unknown POST action: " . $action], 404);
+    // ===== إضافة إشعار =====
+    if ($action === "add_notification") {
+        $data = getJsonInput();
+
+        $userId  = $data["user_id"] ?? 1;
+        $type    = sanitize($data["type"] ?? "info");
+        $title   = sanitize($data["title"] ?? "");
+        $message = sanitize($data["message"] ?? "");
+        $link    = sanitize($data["link"] ?? "");
+
+        if (!$title || !$message) {
+            jsonResponse(["status" => "error", "message" => "Missing fields"], 400);
+        }
+
+        $stmt = $db->prepare("
+            INSERT INTO notifications (user_id, type, title, message, link, is_read)
+            VALUES (:uid, :type, :title, :msg, :link, 0)
+        ");
+
+        try {
+            $stmt->execute([
+                ":uid"   => $userId,
+                ":type"  => $type,
+                ":title" => $title,
+                ":msg"   => $message,
+                ":link"  => $link
+            ]);
+
+            jsonResponse(["status" => "success", "message" => "Notification added", "id" => $db->lastInsertId()]);
+        } catch (Exception $e) {
+            jsonResponse(["status" => "error", "message" => "Database error"], 500);
+        }
+    }
+
+        jsonResponse(["status" => "error", "message" => "Unknown POST action: " . $action], 404);
 }
 
 // ==========================================
@@ -564,7 +598,29 @@ if ($method === "GET") {
         ]);
     }
 
-    jsonResponse(["status" => "error", "message" => "Unknown GET action: " . $action], 404);
+    // ===== قائمة الإشعارات =====
+    if ($action === "list_notifications") {
+        $userId = $_GET["user_id"] ?? 1;
+        $isRead = $_GET["is_read"] ?? null;
+
+        $query = "SELECT * FROM notifications WHERE user_id = :uid";
+        $params = [":uid" => $userId];
+
+        if ($isRead !== null) {
+            $query .= " AND is_read = :is_read";
+            $params[":is_read"] = (int)$isRead;
+        }
+
+        $query .= " ORDER BY created_at DESC LIMIT 50";
+
+        $stmt = $db->prepare($query);
+        $stmt->execute($params);
+        $notifications = $stmt->fetchAll();
+
+        jsonResponse(["status" => "success", "data" => $notifications, "count" => count($notifications)]);
+    }
+
+        jsonResponse(["status" => "error", "message" => "Unknown GET action: " . $action], 404);
 }
 
 // ==========================================
@@ -600,40 +656,10 @@ if ($method === "PUT") {
 
     jsonResponse(["status" => "error", "message" => "Unknown PUT action"], 404);
 }
-// ===== إضافة إشعار =====
-if ($action === "add_notification") {
-    $data = getJsonInput();
-
-    $userId  = $data["user_id"] ?? 1;
-    $type    = sanitize($data["type"] ?? "info");
-    $title   = sanitize($data["title"] ?? "");
-    $message = sanitize($data["message"] ?? "");
-    $link    = sanitize($data["link"] ?? "");
-
-    if (!$title || !$message) {
-        jsonResponse(["status" => "error", "message" => "Missing fields"], 400);
-    }
-
-    $stmt = $db->prepare("
-        INSERT INTO notifications (user_id, type, title, message, link, is_read)
-        VALUES (:uid, :type, :title, :msg, :link, 0)
-    ");
-
-    $stmt->execute([
-        ":uid"   => $userId,
-        ":type"  => $type,
-        ":title" => $title,
-        ":msg"   => $message,
-        ":link"  => $link
-    ]);
-
-    jsonResponse(["status" => "success", "message" => "Notification added", "id" => $db->lastInsertId()]);
-}
 
 
-// ==========================================
-// Method Not Allowed
-// ==========================================
+
+
 
 jsonResponse(["status" => "error", "message" => "Method not allowed: " . $method], 405);
 ?>
