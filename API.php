@@ -600,6 +600,36 @@ if ($method === "PUT") {
 
     jsonResponse(["status" => "error", "message" => "Unknown PUT action"], 404);
 }
+// ===== إضافة إشعار =====
+if ($action === "add_notification") {
+    $data = getJsonInput();
+
+    $userId  = $data["user_id"] ?? 1;
+    $type    = sanitize($data["type"] ?? "info");
+    $title   = sanitize($data["title"] ?? "");
+    $message = sanitize($data["message"] ?? "");
+    $link    = sanitize($data["link"] ?? "");
+
+    if (!$title || !$message) {
+        jsonResponse(["status" => "error", "message" => "Missing fields"], 400);
+    }
+
+    $stmt = $db->prepare("
+        INSERT INTO notifications (user_id, type, title, message, link, is_read)
+        VALUES (:uid, :type, :title, :msg, :link, 0)
+    ");
+
+    $stmt->execute([
+        ":uid"   => $userId,
+        ":type"  => $type,
+        ":title" => $title,
+        ":msg"   => $message,
+        ":link"  => $link
+    ]);
+
+    jsonResponse(["status" => "success", "message" => "Notification added", "id" => $db->lastInsertId()]);
+}
+
 
 // ==========================================
 // Method Not Allowed
