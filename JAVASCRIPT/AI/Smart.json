@@ -1,0 +1,220 @@
+{
+  "project": {
+    "name": "Smart Bins AutoBins System",
+    "type": "Graduation Project",
+    "year": 2026,
+    "developer": {
+      "name": "Mohamed Magdy Abdel Hamid",
+      "role": "Backend Developer"
+    },
+    "description": "Intelligent autonomous waste management platform using IoT-enabled smart bins with real-time tracking, fleet management, and role-based admin dashboard."
+  },
+
+  "tech_stack": {
+    "backend": "PHP 8.2",
+    "database": "MySQL 8.0",
+    "server": "Apache (XAMPP)",
+    "frontend": "HTML, CSS, JavaScript",
+    "maps": "Leaflet.js",
+    "charts": "Chart.js",
+    "hardware": "Raspberry Pi",
+    "api_style": "RESTful JSON API"
+  },
+
+  "project_structure": {
+    "root": "D:\\xampp\\htdocs\\GraduationProject\\",
+    "files": {
+      "API.php": "Main API endpoint - all actions",
+      "auth.php": "Authentication - login/logout",
+      "Helpers.php": "DB connection, sanitize, jsonResponse functions",
+      "api_front/": "All frontend HTML pages",
+      "CSS/": "Stylesheets",
+      "JAVASCRIPT/": "Original JS files (not used)",
+      "api_front/*.js": "Active JS files used by pages"
+    },
+    "frontend_pages": [
+      "login.html",
+      "overview.html",
+      "tracking.html",
+      "carts.html",
+      "trips.html",
+      "alerts.html",
+      "system.html",
+      "admin.html",
+      "account.html"
+    ]
+  },
+
+  "database": {
+    "name": "smart_bins_system",
+    "host": "localhost",
+    "user": "root",
+    "password": "",
+    "tables": {
+      "users": {
+        "primary_key": "user_id",
+        "columns": ["user_id", "email", "password", "full_name", "role", "phone", "avatar_url", "is_active", "last_login", "created_at"],
+        "notes": "password stored as plain text (not hashed yet)"
+      },
+      "bins": {
+        "primary_key": "bin_id",
+        "columns": ["bin_id", "bin_code", "bin_name", "location_name", "fill_level", "battery_level", "status", "latitude", "longitude", "is_active", "updated_at"],
+        "status_values": ["operational", "full", "charging", "maintenance", "offline"]
+      },
+      "trips": {
+        "primary_key": "trip_id",
+        "columns": ["trip_id", "trip_code", "bin_id", "route_name", "start_location", "start_time", "fill_level_start", "battery_start", "status"],
+        "status_values": ["active", "completed", "failed"]
+      },
+      "tracking_points": {
+        "primary_key": "point_id",
+        "columns": ["point_id", "trip_id", "bin_id", "latitude", "longitude", "speed", "battery_level", "fill_level", "timestamp", "created_at"],
+        "notes": "currently empty - needs bins and trips first"
+      },
+      "alerts": {
+        "primary_key": "alert_id",
+        "columns": ["alert_id", "bin_id", "alert_type", "category", "title", "message", "priority", "status", "created_at"],
+        "alert_types": ["critical", "warning", "info", "success"],
+        "status_values": ["active", "acknowledged", "resolved"],
+        "priority": "1 (low) to 10 (high)"
+      },
+      "notifications": {
+        "primary_key": "notification_id",
+        "columns": ["notification_id", "user_id", "type", "title", "message", "link", "is_read", "created_at"]
+      },
+      "activity_logs": {
+        "primary_key": "log_id",
+        "columns": ["log_id", "user_id", "action_type", "entity_type", "entity_id", "description", "ip_address", "user_agent", "created_at"]
+      },
+      "bin_commands": {
+        "primary_key": "id",
+        "columns": ["id", "bin_code", "command", "params", "status", "result", "executed_at"],
+        "status_values": ["pending", "processing", "completed"]
+      },
+      "history_readings": {
+        "primary_key": "id",
+        "columns": ["id", "bin_id", "fill_level", "battery_level", "latitude", "longitude", "recorded_at"]
+      },
+      "maintenance_records": {
+        "columns": ["id", "bin_id", "type", "description", "status"]
+      },
+      "system_settings": {
+        "columns": ["id", "key", "value"]
+      },
+      "daily_statistics": {
+        "columns": ["id", "date", "total_bins", "active_bins", "avg_fill_level"]
+      }
+    }
+  },
+
+  "users": {
+    "test_accounts": [
+      { "email": "admin@autobins.com", "password": "admin123", "role": "super_admin" },
+      { "email": "admin22@smartbins.com", "password": "##password123", "role": "admin" }
+    ],
+    "roles": {
+      "super_admin": "Full access to everything",
+      "admin": "User management + system config, no super-admin-only sections",
+      "operator": "Bin monitoring and trip management only, NO access to admin.html"
+    }
+  },
+
+  "api_endpoints": {
+    "base_url": "http://localhost/GraduationProject",
+    "auth": {
+      "login": { "method": "POST", "url": "auth.php?action=login", "body": { "email": "", "password": "" } },
+      "logout": { "method": "POST", "url": "auth.php?action=logout", "body": {} }
+    },
+    "bins": {
+      "list_bins": { "method": "GET", "url": "API.php?action=list_bins", "params": ["status (optional)"] },
+      "get_bin": { "method": "GET", "url": "API.php?action=get_bin&bin_code=BIN-001" },
+      "full_bins": { "method": "GET", "url": "API.php?action=full_bins" },
+      "stats": { "method": "GET", "url": "API.php?action=stats" },
+      "update_sensor": { "method": "POST", "url": "API.php?action=update_sensor", "body": { "bin_code": "", "fill_level": 0, "battery_level": 0, "latitude": 0, "longitude": 0, "location": "" } },
+      "update_bin_status": { "method": "PUT", "url": "API.php?action=update_bin_status", "body": { "bin_code": "", "status": "" } }
+    },
+    "tracking": {
+      "add_tracking": { "method": "POST", "url": "API.php?action=add_tracking", "body": { "bin_code": "", "trip_code": "", "latitude": 0, "longitude": 0, "speed": 0, "battery_level": 0, "fill_level": 0 } },
+      "history": { "method": "GET", "url": "API.php?action=history&bin_code=BIN-001&limit=50" }
+    },
+    "trips": {
+      "list_trips": { "method": "GET", "url": "API.php?action=list_trips", "params": ["status", "bin_code"] },
+      "start_trip": { "method": "POST", "url": "API.php?action=start_trip", "body": { "bin_code": "", "route_name": "", "start_location": "" } }
+    },
+    "alerts": {
+      "list_alerts": { "method": "GET", "url": "API.php?action=list_alerts", "params": ["status: active|acknowledged|resolved|all", "bin_code"] },
+      "add_alert": { "method": "POST", "url": "API.php?action=add_alert", "body": { "bin_code": "", "alert_type": "warning", "category": "fill_level", "title": "", "message": "", "priority": 5 } }
+    },
+    "notifications": {
+      "list_notifications": { "method": "GET", "url": "API.php?action=list_notifications&user_id=1", "params": ["user_id", "is_read: 0|1"] },
+      "add_notification": { "method": "POST", "url": "API.php?action=add_notification", "body": { "user_id": 1, "type": "alert", "title": "", "message": "", "link": "" } }
+    },
+    "activity_logs": {
+      "list_activity_logs": { "method": "GET", "url": "API.php?action=list_activity_logs", "params": ["user_id", "limit"] },
+      "add_activity_log": { "method": "POST", "url": "API.php?action=add_activity_log", "body": { "user_id": 1, "action_type": "login", "entity_type": "user", "entity_id": 1, "description": "" } }
+    },
+    "commands": {
+      "send_command": { "method": "POST", "url": "API.php?action=send_command", "body": { "bin_code": "", "command": "", "params": {} } },
+      "get_command": { "method": "GET", "url": "API.php?action=get_command&bin_code=BIN-001" },
+      "command_done": { "method": "POST", "url": "API.php?action=command_done", "body": { "command_id": 1, "result": "success" } }
+    },
+    "users": {
+      "add_user": { "method": "POST", "url": "API.php?action=add_user", "body": { "admin_role": "super_admin", "email": "", "password": "", "full_name": "", "role": "operator", "phone": "" }, "notes": "admin_role must be admin or super_admin" }
+    }
+  },
+
+  "url_paths": {
+    "login": "http://localhost/GraduationProject/api_front/login.html",
+    "overview": "http://localhost/GraduationProject/api_front/overview.html",
+    "tracking": "http://localhost/GraduationProject/api_front/tracking.html",
+    "carts": "http://localhost/GraduationProject/api_front/carts.html",
+    "trips": "http://localhost/GraduationProject/api_front/trips.html",
+    "alerts": "http://localhost/GraduationProject/api_front/alerts.html",
+    "system": "http://localhost/GraduationProject/api_front/system.html",
+    "admin": "http://localhost/GraduationProject/api_front/admin.html",
+    "account": "http://localhost/GraduationProject/api_front/account.html"
+  },
+
+  "css_paths": {
+    "pattern": "/GraduationProject/CSS/{page}.css",
+    "files": ["style.css", "overview.css", "tracking.css", "carts.css", "trips.css", "alerts.css", "system.css", "admin.css", "account.css"]
+  },
+
+  "js_paths": {
+    "pattern": "/GraduationProject/api_front/{page}.js",
+    "api_file": "/GraduationProject/api_front/api.js",
+    "notes": "api.js must always be loaded BEFORE page-specific JS"
+  },
+
+  "session_storage_keys": {
+    "isLoggedIn": "true when user is logged in",
+    "userRole": "super_admin | admin | operator",
+    "userId": "numeric user ID",
+    "userEmail": "user email",
+    "userName": "user full name",
+    "token": "auth token"
+  },
+
+  "auth_guard": {
+    "all_pages": "Check sessionStorage.getItem('isLoggedIn') - redirect to login if missing",
+    "admin_page_only": "Check userRole !== 'admin' && userRole !== 'super_admin' - redirect to overview if operator"
+  },
+
+  "pending_improvements": [
+    "Password hashing with bcrypt",
+    "JWT authentication",
+    "Laravel migration",
+    "WebSocket for real-time updates",
+    "Rate limiting",
+    "Cloud deployment",
+    "Add dummy data to bins, trips, tracking_points tables"
+  ],
+
+  "known_issues": {
+    "tracking_points": "Table is empty - need to add bins first, then start a trip, then add tracking points",
+    "passwords": "Stored as plain text - not hashed",
+    "sessions": "Frontend uses sessionStorage not cookies"
+  },
+
+  "instructions_for_next_ai": "This is the Smart Bins AutoBins System backend built with PHP + MySQL on XAMPP. The developer is Mohamed Magdy Abdel Hamid. All frontend pages are in /GraduationProject/api_front/. CSS files are in /GraduationProject/CSS/. The main API is API.php and auth is auth.php. Always load api.js before any page-specific JS. Admin page is protected - only admin and super_admin roles can access it. All API responses return JSON with 'status' field (success/error). Use the api_endpoints section to know exactly how to call each endpoint."
+}
